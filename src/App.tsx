@@ -4,13 +4,11 @@ import "./App.css";
 const PAGE_SIZE = 20;
 
 function App() {
-  const [page, setPage] = useState(0);
-  const [data, setData] = useState<[] | number[]>([]);
+  const [page, setPage] = useState(1);
+  const [data, setData] = useState<[] | any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasNextPage, setNextPage] = useState(true);
-  const [isFetching, setIsFetching] = useState(false);
-
-  const numberArr = Array.from({ length: 100 }, (_, index) => index + 1);
+  const [numberArr, setNumberArr] = useState([]);
 
   const ref = useRef<HTMLDivElement>(null);
 
@@ -21,34 +19,30 @@ function App() {
   };
 
   const fetchMoreData = useCallback(() => {
+    if (numberArr.length === 0) {
+      return;
+    }
     const newData = numberArr.slice(
       page * PAGE_SIZE,
       PAGE_SIZE + page * PAGE_SIZE
     );
-
     setData([...data, ...newData]);
     setPage(page + 1);
     setNextPage(data.length < numberArr.length);
     setIsLoading(false);
-  }, [page]);
+  }, [page, numberArr]);
 
   const callback = useCallback(
     (entries: IntersectionObserverEntry[], observer: IntersectionObserver) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting && hasNextPage) {
           fetchMoreData();
-          setIsLoading(true);
         }
       });
     },
-    [page]
+    [page, numberArr]
   );
-  const handleScroll = () => {
-    const { scrollTop, offsetHeight } = document.documentElement;
-    if (window.innerWidth + scrollTop > offsetHeight * 0.5) {
-      setIsFetching(true);
-    }
-  };
+
   useEffect(() => {
     if (!ref.current) {
       return;
@@ -60,13 +54,20 @@ function App() {
     return () => observer.disconnect();
   }, [ref, callback, options]);
 
-  useEffect(() => {
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  const fetchhandler = async () => {
+    setIsLoading(true);
+    const response = await fetch("https://example.com/user");
+    const jsonData = await response.json();
+    setIsLoading(false);
+    return jsonData;
+  };
 
-  console.log("isLoading", isLoading);
-  // console.log("isFecthing", isFetching);
+  useEffect(() => {
+    fetchhandler().then((data) => {
+      setNumberArr(data.users);
+      setData(data.users.slice(0, 20));
+    });
+  }, []);
 
   return (
     <>
@@ -81,7 +82,7 @@ function App() {
               height: "200px",
             }}
           >
-            {item}
+            {item.firstName}
           </div>
         );
       })}

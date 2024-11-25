@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import "./App.css";
+import useThrottle from "./hooks/useThrottle";
 
 const PAGE_SIZE = 20;
 
@@ -21,14 +22,23 @@ function App() {
     setNextPage(data.length < numberArr.length);
     setIsFetching(false);
   }, [page]);
+  const handleScroll = () => {
+    let { scrollTop, offsetHeight, scrollHeight } = document.documentElement;
+    if (window.innerHeight + scrollTop > offsetHeight * 0.7) {
+      setIsFetching(true);
+    }
+  };
+
+  const throttleScroll = useThrottle(handleScroll);
 
   useEffect(() => {
-    const handleScroll = () => {
-      let { scrollTop, offsetHeight, scrollHeight } = document.documentElement;
-      if (window.innerHeight + scrollTop > offsetHeight * 0.7) {
-        setIsFetching(true);
-      }
-    };
+    // const handleScroll = () => {
+    //   let { scrollTop, offsetHeight, scrollHeight } = document.documentElement;
+    //   if (window.innerHeight + scrollTop > offsetHeight * 0.7) {
+    //     setIsFetching(true);
+    //   }
+    // };
+    throttleScroll();
 
     setIsFetching(true);
     window.addEventListener("scroll", handleScroll);

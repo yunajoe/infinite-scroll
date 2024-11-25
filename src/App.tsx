@@ -1,35 +1,69 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useCallback, useEffect, useState } from "react";
+import "./App.css";
+
+const PAGE_SIZE = 20;
 
 function App() {
-  const [count, setCount] = useState(0)
+  const numberArr = Array.from({ length: 100 }, (_, index) => index + 1);
+  const [page, setPage] = useState(0);
+  const [data, setData] = useState<[] | number[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
+  const [hasNextPage, setNextPage] = useState(true);
+
+  const fetchMoreData = useCallback(() => {
+    const newData = numberArr.slice(
+      page * PAGE_SIZE,
+      PAGE_SIZE + page * PAGE_SIZE
+    );
+
+    setData([...data, ...newData]);
+    setPage(page + 1);
+    setNextPage(data.length < numberArr.length);
+    setIsFetching(false);
+  }, [page]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      let { scrollTop, offsetHeight, scrollHeight } = document.documentElement;
+      if (window.innerHeight + scrollTop > offsetHeight * 0.7) {
+        setIsFetching(true);
+      }
+    };
+
+    setIsFetching(true);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (isFetching && hasNextPage) {
+      fetchMoreData();
+    }
+    if (!hasNextPage) {
+      setIsFetching(false);
+    }
+  }, [isFetching]);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div>
+      {data.map((item, index) => {
+        return (
+          <div
+            key={index}
+            style={{
+              border: "1px solid blue",
+              margin: "10px",
+              width: "150px",
+              height: "200px",
+            }}
+          >
+            {item}
+          </div>
+        );
+      })}
+      {isFetching && <h1 style={{ background: "red" }}>로오딩</h1>}
+    </div>
+  );
 }
 
-export default App
+export default App;

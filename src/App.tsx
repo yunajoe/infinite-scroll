@@ -13,6 +13,7 @@ function App() {
 
   const ref = useRef<HTMLDivElement | null>(null);
 
+  console.log("data", workers);
   const fetchWorkers = async () => {
     console.log("page", page);
     setIsLoading(true);
@@ -49,7 +50,7 @@ function App() {
       observer.observe(ref.current);
     }
     return () => observer.disconnect();
-  }, [ref.current, observerCallback]);
+  }, [ref.current]);
 
   useEffect(() => {
     fetchWorkers();
@@ -60,7 +61,7 @@ function App() {
   }
 
   return (
-    <>
+    <div>
       {workers.map((item) => (
         <div
           key={item.id}
@@ -70,7 +71,7 @@ function App() {
         </div>
       ))}
       <div ref={ref} style={{ margin: "10px" }}></div>
-    </>
+    </div>
   );
 }
 

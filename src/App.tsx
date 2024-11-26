@@ -1,35 +1,62 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useCallback, useEffect, useRef, useState } from "react";
+import { getWorkers } from "./api";
+import "./App.css";
+import { WORKER } from "./type";
 
+const LIMIT = 10;
 function App() {
-  const [count, setCount] = useState(0)
+  const [page, setPage] = useState(1);
+  const [workers, setWorkers] = useState<WORKER[] | []>([]);
+  const [hasNext, setHasNext] = useState(true);
+
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  const fetchData = async () => {
+    const response = await getWorkers(page, LIMIT);
+    if (response.totalCount === workers.length) {
+      setHasNext(false);
+    }
+    setWorkers((prev) => [...prev, ...response.data]);
+    setPage((prev) => prev + 1);
+  };
+  const options = {
+    root: null,
+    rootMargin: "0px",
+    treshold: 1,
+  };
+  const callback = useCallback(
+    (entries: IntersectionObserverEntry[], observer: IntersectionObserver) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting && hasNext) {
+          fetchData();
+        }
+      });
+    },
+    [page]
+  );
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(callback, options);
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => observer.disconnect();
+  }, [callback]);
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      {workers.map((worker) => (
+        <div
+          key={worker.id}
+          style={{ width: "150px", height: "300px", border: "1px solid blue" }}
+        >
+          {worker.name}
+        </div>
+      ))}
+      <div ref={ref} style={{ margin: "10px" }}></div>
     </>
-  )
+  );
 }
 
-export default App
+export default App;

@@ -1,35 +1,60 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect, useState } from "react";
+import "./App.css";
+import { getWorkers } from "./api";
+import UseInfiniteScroll from "./hooks/useInfiniteScroll";
+import { ITEM } from "./type";
+
+const LIMIT = 20;
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [data, setData] = useState<[] | ITEM[]>([]);
+  const [workers, setWorkers] = useState<[] | ITEM[]>([]);
+  const [page, setPage] = useState(0);
+  const [hasNext, setHasNext] = useState(true);
+
+  const fetchMoreData = () => {
+    console.log("page입니당", page);
+    if (data.length > 0) {
+      if (data.length === workers.length) {
+        setHasNext(false);
+        return;
+      }
+    }
+    if (page >= 1) {
+      setWorkers((prev) => [
+        ...prev,
+        ...data.slice(page * LIMIT, page * LIMIT + LIMIT),
+      ]);
+      setPage((prev) => prev + 1);
+    }
+  };
+
+  const ref = UseInfiniteScroll(fetchMoreData, hasNext, page);
+
+  const fetchInitData = async () => {
+    const response = await getWorkers();
+    setData(response.data);
+    setWorkers(response.data.slice(page, LIMIT));
+    setPage((prev) => prev + 1);
+  };
+
+  useEffect(() => {
+    fetchInitData();
+  }, []);
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      {workers.map((worker) => (
+        <div
+          style={{ width: "150px", height: "300px", border: "1px solid blue" }}
+          key={worker.id}
+        >
+          {worker.firstName}
+        </div>
+      ))}
+      <div ref={ref} style={{ margin: "10px" }}></div>
     </>
-  )
+  );
 }
 
-export default App
+export default App;

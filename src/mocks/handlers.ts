@@ -7,6 +7,9 @@ const workers = Array.from({ length: 100 }, (_, index) => ({
 }));
 export const handlers = [
   http.get("https://crystarvision/workers", () => {
-    return HttpResponse.json(workers);
+    return HttpResponse.json({
+      data: workers,
+      status: 200,
+    });
   }),
 ];

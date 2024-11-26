@@ -1,5 +1,5 @@
 export type ITEM = {
-  item: string;
+  id: string;
   firstName: string;
   lastName: string;
 };

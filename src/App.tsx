@@ -1,35 +1,74 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useCallback, useEffect, useRef, useState } from "react";
+import "./App.css";
+import { WORKER } from "./type";
+
+const LIMIT = 10;
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0);
+  const [totalData, setTotalData] = useState<WORKER[] | []>([]);
+  const [workersData, setWorkersData] = useState<WORKER[] | []>([]);
+  const [page, setPage] = useState(0);
+  const [hasNext, setHasNext] = useState(true);
+  const workers = Array.from({ length: 100 }, (_, index) => ({
+    id: `ID-${index + 1}`,
+    name: `name-${index + 1}`,
+  }));
+
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  const fetchWorkers = () => {
+    if (workersData.length === workers.length) {
+      setHasNext(false);
+    }
+
+    setWorkersData((prev) => [
+      ...prev,
+      ...totalData.slice(page * LIMIT, page * LIMIT + LIMIT),
+    ]);
+    setPage((prev) => prev + 1);
+  };
+
+  useEffect(() => {
+    setTotalData(workers);
+    setWorkersData(workers.slice(0, LIMIT));
+  }, []);
+  const options = {
+    root: null,
+    rootMargin: "0px",
+    threshold: 1,
+  };
+  const callback = useCallback(
+    (entries: IntersectionObserverEntry[], observer: IntersectionObserver) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting && hasNext) {
+          fetchWorkers();
+        }
+      });
+    },
+    [page]
+  );
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(callback, options);
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+    return () => observer.disconnect();
+  }, [ref.current, callback]);
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      {workersData.map((worker) => (
+        <div
+          style={{ width: "150px", height: "300px", border: "1px solid blue" }}
+        >
+          {worker.name}
+        </div>
+      ))}
+      <div ref={ref} style={{ margin: "10px" }}></div>
     </>
-  )
+  );
 }
 
-export default App
+export default App;
